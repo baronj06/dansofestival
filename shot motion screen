@@ -75,9 +75,15 @@ def func_opencv():
                 landmark_drawing_spec=mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=2, circle_radius=2),
                 connection_drawing_spec=mp_drawing.DrawingSpec(color=(0, 0, 255), thickness=2, circle_radius=2)
             )
-
+        
         frame = cv2.resize(frame, (w, h))
         frame = cv2.cvtColor(cv2.flip(frame, 1), cv2.COLOR_BGR2RGB)
+        if pose_results.pose_landmarks:
+            point_14, point_16 = round(pose_results.pose_landmarks.landmark[14].z, 2), round(pose_results.pose_landmarks.landmark[16].z, 2)
+            cv2.putText(frame, f"14:{point_14}, 16:{point_16}, dist:{round(abs(point_14 - point_16), 2)}", (5, 5),font,1,(0,255,0),2)
+        else :
+            cv2.putText(frame, f"14:0, 16:0, dist:0", (5, 5),font,1,(0,255,0),2)
+
         img = Image.fromarray(frame)
         img = ImageTk.PhotoImage(image=img)
         lbl_cv.config(image=img)
@@ -102,6 +108,7 @@ main_window.resizable(True, True)
 task_id = None
 mp_drawing_styles = mp.solutions.drawing_styles
 
+font=cv2.FONT_HERSHEY_SIMPLEX
 w, h = 700, 560
 mp_drawing = mp.solutions.drawing_utils
 mp_hands = mp.solutions.hands
