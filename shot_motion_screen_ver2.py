@@ -58,13 +58,6 @@ def func_opencv():
     ret, frame = cap.read()
     if ret:
         cvtColor = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-        # results = hands.process(cvtColor)
-        # if results.multi_hand_landmarks:
-        #     for landmarks in results.multi_hand_landmarks:
-        #         mp_drawing.draw_landmarks(
-        #             frame, landmarks, mp_hands.HAND_CONNECTIONS)
-
         pose_results = pose.process(cvtColor)
         
         if pose_results.pose_landmarks:
