@@ -1,6 +1,5 @@
 # dansofestival
-단소고 페스티벌 농구 슛 모션 분석 프로그램
-https://kwonkai.tistory.com/141  
+단소고 페스티벌 농구 슛 모션 분석 프로그램 - https://kwonkai.tistory.com/141  
 https://developers.google.com/mediapipe/solutions/vision/pose_landmarker  
 https://blog.naver.com/oliven2/220999105393 슛폼 정석  
 https://blog.naver.com/oliven2/221066556948 슛폼 정석  
@@ -8,17 +7,6 @@ https://blog.naver.com/oliven2/221066556948 슛폼 정석
 
 <hr>
 
-지금 링크는 걸려있는데 아무런 설명이 없음... <br>
-너희 만들고 싶은 동작을 여기에 쭉 써야 함, 쓸 때는 최대한 알아볼 수 있도록 설명 <br>
-예를 들어서 손목과 팔꿈치 사이의 거리를 측정해서 벌어진 정도를 측정하고 싶습니다. <br>
-<br>
-
-
-그리고 문서 작성은 들어가야 함<br>
-
-<hr>
-예시)
-<hr>
 # Shoot Help Program
 
 ### 프로그램 제작 이유
