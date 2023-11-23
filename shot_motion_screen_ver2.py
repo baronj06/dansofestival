@@ -4,12 +4,12 @@ from tkinter import *
 from tkinter.font import Font
 from PIL import Image, ImageTk  # pip install pillow
 
-
 # 1번 로그인 창
 def get_text():
-    if entry_id.get() and entry_pw.get():
-        with open("record.txt", "a", encoding="UTF-8") as f:
-            f.write(f"이름:{entry_id.get()},학번:{entry_pw.get()},0\n")
+    global user_id, user_num
+    if entry_id.get() and entry_num.get():
+        user_id = entry_id.get()
+        user_num = entry_num.get()
         root.destroy()
 
 
@@ -17,6 +17,10 @@ root = Tk()
 root.title("login")
 root.geometry("550x500+400+200")
 root.resizable(True, True)
+
+user_id = ""
+user_num = ""
+user_point = 0
 
 title_font = Font(family="Yeongdeok_Sea.ttf", size=30, weight="bold")
 lbl_font = Font(family="Yeongdeok_Sea.ttf", size=15)
@@ -39,8 +43,8 @@ entry_id.pack()
 lbl2 = Label(frame, text="학번", font=lbl_font, anchor="w",
             width=50, padx=15, pady=10)
 lbl2.pack()
-entry_pw = Entry(frame, font=txt_font, bd=1, relief="solid", width=26)
-entry_pw.pack()
+entry_num = Entry(frame, font=txt_font, bd=1, relief="solid", width=26)
+entry_num.pack()
 
 lbl_space = Label(frame, text="", pady=15)
 lbl_space.pack()
@@ -54,9 +58,10 @@ root.mainloop()
 
 # 2번 손 인식 창
 def func_opencv():
-    global w, h, task_id
+    global w, h, task_id, chk_time, point1, point2
     ret, frame = cap.read()
     if ret:
+        chk_time += 10
         cvtColor = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         pose_results = pose.process(cvtColor)
         
@@ -72,34 +77,52 @@ def func_opencv():
         frame = cv2.resize(frame, (w, h))
         frame = cv2.cvtColor(cv2.flip(frame, 1), cv2.COLOR_BGR2RGB)
         if pose_results.pose_landmarks:
+            cv2.putText(frame, f"time:{max_time - chk_time}", (5, 35),font,1,(0,255,0),2)
             if hand_side:
-                point_14, point_16 = round(pose_results.pose_landmarks.landmark[14].z, 2), round(pose_results.pose_landmarks.landmark[16].z, 2)
-                cv2.putText(frame, f"Right, 14:{point_14}, 16:{point_16}, dist:{round(abs(point_14 - point_16), 2)}", (5, 35),font,1,(0,255,0),2)
+                point1 = abs(round(pose_results.pose_landmarks.landmark[14].z, 2) - round(pose_results.pose_landmarks.landmark[16].z, 2))
+                point2.append(pose_results.pose_landmarks.landmark[12].y)
+                # point3 = 0
+                # point_14, point_16 = round(pose_results.pose_landmarks.landmark[14].z, 2), round(pose_results.pose_landmarks.landmark[16].z, 2)
+                # cv2.putText(frame, f"Right, 14:{point_14}, 16:{point_16}, dist:{round(abs(point_14 - point_16), 2)}", (5, 35),font,1,(0,255,0),2)
             else :
-                point_13, point_15 = round(pose_results.pose_landmarks.landmark[13].z, 2), round(pose_results.pose_landmarks.landmark[15].z, 2)
-                cv2.putText(frame, f"'Left, 13:{point_13}, 15:{point_15}, dist:{round(abs(point_13 - point_15), 2)}", (5, 35),font,1,(0,255,0),2)
-        else :
-            cv2.putText(frame, f"0, 0, dist:0", (5, 35),font,1,(0,255,0),2)
+                point1 = abs(round(pose_results.pose_landmarks.landmark[13].z, 2) - round(pose_results.pose_landmarks.landmark[15].z, 2))
+                point2.append(pose_results.pose_landmarks.landmark[11].y)
+                # point3 = 0
+                # point_13, point_15 = round(pose_results.pose_landmarks.landmark[13].z, 2), round(pose_results.pose_landmarks.landmark[15].z, 2)
+                # cv2.putText(frame, f"'Left, 13:{point_13}, 15:{point_15}, dist:{round(abs(point_13 - point_15), 2)}", (5, 35),font,1,(0,255,0),2)
+        # else :
+            # cv2.putText(frame, f"0, 0, dist:0", (5, 35),font,1,(0,255,0),2)
 
         img = Image.fromarray(frame)
         img = ImageTk.PhotoImage(image=img)
         lbl_cv.config(image=img)
         lbl_cv.image = img
-
-    task_id = main_window.after(10, func_opencv)
-
+    
+    if chk_time < max_time:
+        task_id = main_window.after(10, func_opencv)
+    else :
+        main_window.after_cancel(task_id)
+        lbl_cv.config(image=init_img)
+        print(point2, len(point2))
 
 def close_window():
-    main_window.after_cancel(task_id)
+    if task_id:
+        main_window.after_cancel(task_id)
     hands.close()
     pose.close()
     cap.release()
+    
+    with open("record.txt", "a", encoding="UTF-8") as f:
+        f.write(f"이름:{user_id},학번:{user_num},{user_point}\n")
+    
     main_window.destroy()
 
 def set_hand(side):
     global hand_side
     hand_side = side
 
+def result_point():
+    pass
 
 main_window = Tk()
 main_window.title("main")
@@ -109,6 +132,12 @@ main_window.resizable(True, True)
 task_id = None
 mp_drawing_styles = mp.solutions.drawing_styles
 hand_side = True
+chk_time = 0
+max_time = 2000
+
+point1 = 0 # z축 확인하여 벌어진 정도 확인
+point2 = [] # 어깨 높이 변화
+point3 = 0 # 손 데이터
 
 font=cv2.FONT_HERSHEY_SIMPLEX
 w, h = 700, 560
@@ -126,20 +155,24 @@ pose = mp_pose.Pose(
     min_tracking_confidence=0.5
 )
 
-lbl_cv = Label(main_window, width=w, height=h)
+init_img = PhotoImage(file="dksh.png")
+
+lbl_cv = Label(main_window, width=w, height=h, image=init_img)
 lbl_cv.grid(row=0,column=0, columnspan=2)
 
+btn_start = Button(main_window, text="Start", command=func_opencv)
+btn_start.grid(row=1, column=0, columnspan=2)
+
 btn_right_hand = Button(main_window, text="Right", command=lambda : set_hand(True))
-btn_right_hand.grid(row=1, column=0)
+btn_right_hand.grid(row=2, column=0)
 
 btn_left_hand = Button(main_window, text="Left", command=lambda : set_hand(False))
-btn_left_hand.grid(row=1, column=1)
+btn_left_hand.grid(row=2, column=1)
 
 btn_show_res = Button(main_window, text="Result", command=close_window)
-btn_show_res.grid(row=2, column=0, columnspan=2)
+btn_show_res.grid(row=3, column=0, columnspan=2)
 
 cap = cv2.VideoCapture(0)
-func_opencv()
 
 main_window.protocol("WM_DELETE_WINDOW", close_window)
 main_window.mainloop()
