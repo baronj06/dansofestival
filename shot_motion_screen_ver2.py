@@ -3,6 +3,7 @@ import mediapipe as mp  # pip install mediapipe
 from tkinter import *
 from tkinter.font import Font
 from PIL import Image, ImageTk  # pip install pillow
+import math # atan2
 
 # 1번 로그인 창
 def get_text():
@@ -58,7 +59,7 @@ root.mainloop()
 
 # 2번 손 인식 창
 def func_opencv():
-    global w, h, task_id, chk_time, point1, point2
+    global w, h, task_id, chk_time, point1, point2, point3
     ret, frame = cap.read()
     if ret:
         chk_time += 10
@@ -79,15 +80,15 @@ def func_opencv():
         if pose_results.pose_landmarks:
             cv2.putText(frame, f"time:{max_time - chk_time}", (5, 35),font,1,(0,255,0),2)
             if hand_side:
-                point1 = abs(round(pose_results.pose_landmarks.landmark[14].z, 2) - round(pose_results.pose_landmarks.landmark[16].z, 2))
+                point1.append(abs(round(pose_results.pose_landmarks.landmark[14].z, 2) - round(pose_results.pose_landmarks.landmark[16].z, 2)))
                 point2.append(pose_results.pose_landmarks.landmark[12].y)
-                # point3 = 0
+                point3 = (pose_results.pose_landmarks.landmark[16], pose_results.pose_landmarks.landmark[20]) 
                 # point_14, point_16 = round(pose_results.pose_landmarks.landmark[14].z, 2), round(pose_results.pose_landmarks.landmark[16].z, 2)
                 # cv2.putText(frame, f"Right, 14:{point_14}, 16:{point_16}, dist:{round(abs(point_14 - point_16), 2)}", (5, 35),font,1,(0,255,0),2)
             else :
-                point1 = abs(round(pose_results.pose_landmarks.landmark[13].z, 2) - round(pose_results.pose_landmarks.landmark[15].z, 2))
+                point1.append(abs(round(pose_results.pose_landmarks.landmark[13].z, 2) - round(pose_results.pose_landmarks.landmark[15].z, 2)))
                 point2.append(pose_results.pose_landmarks.landmark[11].y)
-                # point3 = 0
+                point3 = (pose_results.pose_landmarks.landmark[15], pose_results.pose_landmarks.landmark[19])
                 # point_13, point_15 = round(pose_results.pose_landmarks.landmark[13].z, 2), round(pose_results.pose_landmarks.landmark[15].z, 2)
                 # cv2.putText(frame, f"'Left, 13:{point_13}, 15:{point_15}, dist:{round(abs(point_13 - point_15), 2)}", (5, 35),font,1,(0,255,0),2)
         # else :
@@ -103,7 +104,8 @@ def func_opencv():
     else :
         main_window.after_cancel(task_id)
         lbl_cv.config(image=init_img)
-        print(point2, len(point2))
+        result_point()
+        
 
 def close_window():
     if task_id:
@@ -121,8 +123,18 @@ def set_hand(side):
     global hand_side
     hand_side = side
 
+def start_chk():
+    global point1, point2, point3
+    point1 = [] # z축 확인하여 벌어진 정도 확인
+    point2 = [] # 어깨 높이 변화
+    point3 = tuple() # 손 변화량 (각도)
+    func_opencv()
+
 def result_point():
-    pass
+    print(len(point1), sum(point1) / len(point1))
+    print(len(point2), max(point2) - min(point2))
+    at2 = math.atan2(point3[1].y - point3[0].y, point3[1].x - point3[0].x)
+    print(f"atan2:{at2}, atan2(degrees){math.degrees(at2)}")
 
 main_window = Tk()
 main_window.title("main")
@@ -135,9 +147,9 @@ hand_side = True
 chk_time = 0
 max_time = 2000
 
-point1 = 0 # z축 확인하여 벌어진 정도 확인
+point1 = [] # z축 확인하여 벌어진 정도 확인
 point2 = [] # 어깨 높이 변화
-point3 = 0 # 손 데이터
+point3 = tuple() # 손 변화량 (각도)
 
 font=cv2.FONT_HERSHEY_SIMPLEX
 w, h = 700, 560
@@ -160,7 +172,7 @@ init_img = PhotoImage(file="dksh.png")
 lbl_cv = Label(main_window, width=w, height=h, image=init_img)
 lbl_cv.grid(row=0,column=0, columnspan=2)
 
-btn_start = Button(main_window, text="Start", command=func_opencv)
+btn_start = Button(main_window, text="Start", command=start_chk)
 btn_start.grid(row=1, column=0, columnspan=2)
 
 btn_right_hand = Button(main_window, text="Right", command=lambda : set_hand(True))
