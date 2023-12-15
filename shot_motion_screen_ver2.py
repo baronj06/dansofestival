@@ -78,7 +78,8 @@ def func_opencv():
         frame = cv2.resize(frame, (w, h))
         frame = cv2.cvtColor(cv2.flip(frame, 1), cv2.COLOR_BGR2RGB)
         if pose_results.pose_landmarks:
-            cv2.putText(frame, f"time:{max_time - chk_time}", (5, 35),font,1,(0,255,0),2)
+            cv2.putText(frame, f"time:{max_time - chk_time}", (5, 35),font, 1, (0,255,0), 2)
+            cv2.putText(frame, f"Hand:{'Right' if hand_side else 'Left'}", (w * 11 // 15, 35), font, 1, (0,255,0), 2)
             if hand_side:
                 point1.append(abs(round(pose_results.pose_landmarks.landmark[14].z, 2) - round(pose_results.pose_landmarks.landmark[16].z, 2)))
                 point2.append(pose_results.pose_landmarks.landmark[12].y)
@@ -114,9 +115,6 @@ def close_window():
     pose.close()
     cap.release()
     
-    with open("record.txt", "a", encoding="UTF-8") as f:
-        f.write(f"이름:{user_id},학번:{user_num},{user_point}\n")
-    
     main_window.destroy()
 
 def set_hand(side):
@@ -131,7 +129,11 @@ def start_chk():
     func_opencv()
 
 def result_point():
-    print(len(point1), sum(point1) / len(point1))
+    # 100 - (z축 평균값(사용자 지정 값) - 0.14(기준값))
+    user_point = round(100 - (sum(point1) / len(point1) - 0.14), 2)
+    with open("record.txt", "a", encoding="UTF-8") as f:
+        f.write(f"이름:{user_id},학번:{user_num},{user_point}\n")
+    
     print(len(point2), max(point2) - min(point2))
     at2 = math.atan2(point3[1].y - point3[0].y, point3[1].x - point3[0].x)
     print(f"atan2:{at2}, atan2(degrees){math.degrees(at2)}")
@@ -200,12 +202,12 @@ with open("record.txt", "r", encoding="UTF-8") as f:
     data_list = []
     for data in datas:
         data = data.strip().split(",")
-        data_list.append((data[0], data[1], int(data[2])))
+        data_list.append((data[0], data[1], float(data[2])))
 
     data_list.sort(key=lambda x: x[2], reverse=True)
 
     for data in data_list:
-        lbl_res = Label(result_window, text=data, font=lbl_font)
+        lbl_res = Label(result_window, text=f"이름:{data[0]}, 학번:{data[1]}, 점수: {data[2]}", font=lbl_font)
         lbl_res.pack()
 
 result_window.mainloop()
